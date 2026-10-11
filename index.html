@@ -146,14 +146,14 @@ a.btn{
 
   <section class="card" aria-labelledby="h-up">
     <h2 id="h-up">Video</h2>
-    <p class="hint">MP4, MOV, MKV ya WEBM. Behtar hai ke 100 MB se chhoti ho.</p>
+    <p class="hint">MP4, MOV, MKV ya WEBM. 4-8 minute ki bari video bhi chalegi, wo tukron mein upload hoti hai.</p>
     <div class="drop" id="drop" tabindex="0" role="button" aria-label="Video chunein">
       <strong id="dropTitle">Video yahan chhorein ya click karein</strong>
       <span>Awaaz wali koi bhi video</span>
     </div>
     <input type="file" id="file" accept="video/*" class="hidden">
     <div class="fileinfo" id="fileinfo"></div>
-    <div class="warn hidden" id="sizewarn">Ye file 100 MB se bari hai. Upload fail ho sakta hai, behtar hai pehle video chhoti kar lein.</div>
+    <div class="warn hidden" id="sizewarn">Ye file bohat bari hai (1.5 GB se zyada). Upload mein bohat waqt lag sakta hai.</div>
   </section>
 
   <section class="card" aria-labelledby="h-set">
@@ -309,7 +309,7 @@ a.btn{
     file = f;
     $("fileinfo").textContent = f.name + "  (" + (f.size / 1048576).toFixed(1) + " MB)";
     $("dropTitle").textContent = "Video chuni gayi. Badalne ke liye dobara click karein";
-    show("sizewarn", f.size > 100 * 1048576);
+    show("sizewarn", f.size > 1536 * 1048576);
     updateStart();
   }
   var drop = $("drop");
@@ -334,27 +334,55 @@ a.btn{
     busy = true; updateStart(); wh.classList.add("live");
     show("errCard", false); show("doneCard", false); show("progCard", true);
     setBar(2); $("msg").textContent = "Video upload ho rahi hai: 0%";
-    var fd = new FormData();
-    fd.append("video", file); fd.append("target", lang);
-    fd.append("voice", $("voice").value); fd.append("source", $("source").value);
-    var xhr = new XMLHttpRequest();
-    xhr.open("POST", base + "/dub");
-    xhr.upload.onprogress = function(e){
-      if (e.lengthComputable) {
-        var p = Math.round(e.loaded / e.total * 100);
-        $("msg").textContent = "Video upload ho rahi hai: " + p + "%";
-        setBar(p * 0.05);
-      }
-    };
-    xhr.onerror = function(){ showError("Upload nahi ho saki. Backend link aur video ka size check karein.", "Network error during upload to " + base); };
-    xhr.onload = function(){
-      var j = {};
-      try { j = JSON.parse(xhr.responseText); } catch(e){}
-      if (xhr.status !== 200 || !j.job_id) { showError("Backend ne video qabool nahi ki.", "HTTP " + xhr.status + "\n" + (xhr.responseText || "").slice(0, 600)); return; }
-      poll(j.job_id, 0);
-    };
-    xhr.send(fd);
+    uploadAndStart();
   });
+
+  var CHUNK = 16 * 1048576;
+  function post(path, fd, tries){
+    return fetch(base + path, {method:"POST", body: fd}).then(function(r){
+      return r.json().catch(function(){ return {}; }).then(function(j){
+        if (!r.ok) throw new Error((j && j.error) || ("HTTP " + r.status));
+        return j;
+      });
+    }).catch(function(err){
+      if (tries > 1) {
+        return new Promise(function(res){ setTimeout(res, 2000); }).then(function(){ return post(path, fd, tries - 1); });
+      }
+      throw err;
+    });
+  }
+
+  function uploadAndStart(){
+    var total = Math.max(1, Math.ceil(file.size / CHUNK));
+    post("/upload/init", new FormData(), 3).then(function(j){
+      var uid = j.upload_id, i = 0;
+      function next(){
+        if (i >= total) return Promise.resolve();
+        var fd = new FormData();
+        fd.append("upload_id", uid); fd.append("index", String(i));
+        fd.append("chunk", file.slice(i * CHUNK, (i + 1) * CHUNK), "part");
+        return post("/upload/chunk", fd, 4).then(function(){
+          i++;
+          var p = Math.round(i / total * 100);
+          $("msg").textContent = "Video upload ho rahi hai: " + p + "% (" + i + " / " + total + ")";
+          setBar(p * 0.05);
+          return next();
+        });
+      }
+      return next().then(function(){
+        var fd = new FormData();
+        fd.append("upload_id", uid); fd.append("total", String(total)); fd.append("filename", file.name);
+        fd.append("target", lang); fd.append("voice", $("voice").value); fd.append("source", $("source").value);
+        $("msg").textContent = "Upload mukammal, dubbing shuru ho rahi hai...";
+        return post("/upload/finish", fd, 3);
+      });
+    }).then(function(j){
+      if (!j.job_id) throw new Error("Backend ne job id nahi di");
+      poll(j.job_id, 0);
+    }).catch(function(err){
+      showError("Upload nahi ho saki. Backend link check karein aur dobara koshish karein.", "Upload error: " + (err && err.message ? err.message : err) + "\nBackend: " + base);
+    });
+  }
 
   function poll(id, fails){
     fetch(base + "/status/" + id, {cache:"no-store"}).then(function(r){
