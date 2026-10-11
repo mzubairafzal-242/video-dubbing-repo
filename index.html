@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZA Dubbing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Figtree:wght@400;500;600&family=Noto+Naskh+Arabic:wght@600&family=Noto+Sans+Devanagari:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF1F4; --surface:#FFFFFF; --ink:#14272E; --muted:#5A6D75; --line:#D3DCE1;
+  --accent:#0B6E78; --accent-ink:#FFFFFF; --wave:#F2B632; --danger:#B3261E; --ok:#1F8A4C;
+  --soft:#E3EBEF;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1A1F; --surface:#16252C; --ink:#E6EEF0; --muted:#8FA3AB; --line:#27393F;
+    --accent:#3FC1CD; --accent-ink:#0B1A1F; --wave:#F2B632; --danger:#FF8A80; --ok:#6FD39A;
+    --soft:#1D2F37;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1A1F; --surface:#16252C; --ink:#E6EEF0; --muted:#8FA3AB; --line:#27393F;
+  --accent:#3FC1CD; --accent-ink:#0B1A1F; --wave:#F2B632; --danger:#FF8A80; --ok:#6FD39A;
+  --soft:#1D2F37;
+}
+*{box-sizing:border-box}
+html{height:100%}
+body{
+  margin:0; min-height:100%; background:var(--bg); color:var(--ink);
+  font-family:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:16px; line-height:1.55;
+  padding:max(20px,env(safe-area-inset-top)) 16px max(32px,env(safe-area-inset-bottom));
+}
+.wrap{max-width:720px; margin:0 auto}
+h1{
+  font-family:"Bricolage Grotesque","Figtree",system-ui,sans-serif;
+  font-weight:800; font-size:clamp(34px,7vw,52px); line-height:1.02; letter-spacing:-0.02em;
+  margin:6px 0 10px;
+}
+.lede{color:var(--muted); margin:0 0 22px; max-width:56ch}
+.wavehead{display:flex; align-items:flex-end; gap:3px; height:34px; margin:6px 0 4px}
+.wavehead i{display:block; width:5px; border-radius:3px; background:var(--wave); height:30%}
+.wavehead.live i{animation:bounce 1s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
+.wavehead i{transform-origin:bottom}
+@media (prefers-reduced-motion: reduce){.wavehead.live i{animation:none}}
+
+.card{
+  background:var(--surface); border:1px solid var(--line); border-radius:14px;
+  padding:18px; margin-bottom:14px;
+}
+.card h2{
+  font-family:"Bricolage Grotesque","Figtree",sans-serif; font-size:19px; font-weight:600;
+  margin:0 0 4px; letter-spacing:-0.01em;
+}
+.hint{color:var(--muted); font-size:14px; margin:0 0 12px}
+label{display:block; font-weight:600; font-size:14px; margin:14px 0 6px}
+input[type=text], select{
+  width:100%; font:inherit; color:var(--ink); background:var(--bg);
+  border:1px solid var(--line); border-radius:10px; padding:11px 12px; min-height:44px;
+}
+select{appearance:auto}
+:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+button{
+  font:inherit; font-weight:600; cursor:pointer; min-height:44px;
+  border-radius:10px; border:1px solid var(--line); background:var(--surface); color:var(--ink);
+  padding:10px 16px;
+}
+button.primary{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+button.primary:disabled{opacity:.45; cursor:not-allowed}
+button:disabled{cursor:not-allowed}
+
+.row{display:flex; gap:8px; align-items:stretch}
+.row > input{flex:1}
+.status{display:flex; align-items:center; gap:8px; font-size:14px; color:var(--muted); margin-top:10px}
+.dot{width:10px; height:10px; border-radius:50%; background:var(--muted)}
+.dot.ok{background:var(--ok)}
+.dot.bad{background:var(--danger)}
+
+.drop{
+  border:2px dashed var(--line); border-radius:12px; padding:26px 16px; text-align:center;
+  background:var(--bg); cursor:pointer;
+}
+.drop.over{border-color:var(--accent); background:var(--soft)}
+.drop strong{display:block; font-size:17px}
+.drop span{color:var(--muted); font-size:14px}
+.fileinfo{margin-top:10px; font-size:14px; word-break:break-all}
+.warn{color:var(--danger); font-size:14px; margin-top:6px}
+
+.tiles{display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
+.tile{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  min-height:96px; padding:12px 8px; border-radius:12px; border:2px solid var(--line);
+  background:var(--bg); color:var(--ink);
+}
+.tile .glyph{font-size:30px; line-height:1.3}
+.tile .glyph.ur{font-family:"Noto Naskh Arabic","Figtree",serif; font-weight:600}
+.tile .glyph.hi{font-family:"Noto Sans Devanagari","Figtree",sans-serif; font-weight:600}
+.tile .glyph.en{font-family:"Bricolage Grotesque","Figtree",sans-serif; font-weight:800; font-size:28px}
+.tile .nm{font-size:13px; color:var(--muted)}
+.tile[aria-checked="true"]{border-color:var(--accent); background:var(--soft)}
+.tile[aria-checked="true"] .nm{color:var(--ink)}
+
+.cols{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+@media (max-width:560px){.cols{grid-template-columns:1fr}}
+
+.progress{height:12px; background:var(--soft); border-radius:8px; overflow:hidden; margin:12px 0 8px}
+.progress > div{height:100%; width:0; background:var(--accent); transition:width .4s ease}
+.msg{font-size:15px; margin:0}
+.small{font-size:13px; color:var(--muted)}
+
+.errbox{
+  border:1px solid var(--danger); border-radius:10px; padding:12px; margin-top:12px;
+  background:var(--bg);
+}
+.errbox pre{
+  white-space:pre-wrap; word-break:break-word; font-size:12.5px; margin:8px 0; max-height:220px; overflow:auto;
+  font-family:ui-monospace,Menlo,Consolas,monospace;
+}
+video{width:100%; border-radius:10px; background:#000; max-height:60vh}
+.actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px}
+a.btn{
+  display:inline-flex; align-items:center; text-decoration:none; font-weight:600; min-height:44px;
+  border-radius:10px; padding:10px 16px; background:var(--accent); color:var(--accent-ink);
+}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="wavehead" id="wavehead" aria-hidden="true"></div>
+  <h1>ZA Dubbing</h1>
+  <p class="lede">Video ki awaaz badlein: Urdu, Hindi ya English mein. Music aur sound effects wohi rehte hain, sirf bolne wali awaaz badalti hai.</p>
+
+  <section class="card" aria-labelledby="h-conn">
+    <h2 id="h-conn">Backend</h2>
+    <p class="hint">Kaggle notebook chalane ke baad jo <b>trycloudflare.com</b> wala link aaye, wo yahan paste karein.</p>
+    <div class="row">
+      <input type="text" id="backend" placeholder="https://xxxx.trycloudflare.com" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Backend link">
+      <button id="connectBtn">Connect</button>
+    </div>
+    <div class="status"><span class="dot" id="dot"></span><span id="connText">Abhi connect nahi hua</span></div>
+  </section>
+
+  <section class="card" aria-labelledby="h-up">
+    <h2 id="h-up">Video</h2>
+    <p class="hint">MP4, MOV, MKV ya WEBM. Behtar hai ke 100 MB se chhoti ho.</p>
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Video chunein">
+      <strong id="dropTitle">Video yahan chhorein ya click karein</strong>
+      <span>Awaaz wali koi bhi video</span>
+    </div>
+    <input type="file" id="file" accept="video/*" class="hidden">
+    <div class="fileinfo" id="fileinfo"></div>
+    <div class="warn hidden" id="sizewarn">Ye file 100 MB se bari hai. Upload fail ho sakta hai, behtar hai pehle video chhoti kar lein.</div>
+  </section>
+
+  <section class="card" aria-labelledby="h-set">
+    <h2 id="h-set">Dub kis zubaan mein karni hai</h2>
+    <div class="tiles" role="radiogroup" aria-label="Target zubaan" id="tiles">
+      <button type="button" class="tile" role="radio" aria-checked="true" data-lang="ur"><span class="glyph ur">اردو</span><span class="nm">Urdu</span></button>
+      <button type="button" class="tile" role="radio" aria-checked="false" data-lang="hi"><span class="glyph hi">हिन्दी</span><span class="nm">Hindi</span></button>
+      <button type="button" class="tile" role="radio" aria-checked="false" data-lang="en"><span class="glyph en">English</span><span class="nm">English</span></button>
+    </div>
+
+    <div class="cols">
+      <div>
+        <label for="voice">Awaaz (voice)</label>
+        <div class="row">
+          <select id="voice"></select>
+          <button type="button" id="previewBtn" title="Is awaaz ka nimuna suniye">Sunein</button>
+        </div>
+      </div>
+      <div>
+        <label for="source">Video ki asal zubaan</label>
+        <select id="source">
+          <option value="auto">Khud pehchan lo</option>
+          <option value="en">English</option>
+          <option value="ur">Urdu</option>
+          <option value="hi">Hindi</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <button class="primary" id="startBtn" style="width:100%; min-height:52px; font-size:17px" disabled>Dubbing shuru karein</button>
+
+  <section class="card hidden" id="progCard" style="margin-top:14px" aria-live="polite">
+    <h2>Dubbing ho rahi hai</h2>
+    <div class="progress"><div id="bar"></div></div>
+    <p class="msg" id="msg">Shuru ho raha hai...</p>
+    <p class="small" id="submsg">Lambi video mein kuch minute lag sakte hain. Is page ko band na karein.</p>
+  </section>
+
+  <section class="card hidden" id="errCard" style="margin-top:14px" role="alert">
+    <h2>Kuch masla aa gaya</h2>
+    <p class="msg" id="errShort"></p>
+    <div class="errbox">
+      <pre id="errText"></pre>
+      <button type="button" id="copyErr">Error copy karein</button>
+    </div>
+    <p class="small">Ye error Claude ko bhej dein, wo isay theek kar dega.</p>
+  </section>
+
+  <section class="card hidden" id="doneCard" style="margin-top:14px">
+    <h2>Video tayyar hai</h2>
+    <p class="small" id="doneInfo"></p>
+    <video id="player" controls playsinline></video>
+    <div class="actions">
+      <a class="btn" id="dlLink" href="#">Download karein</a>
+      <button type="button" id="againBtn">Nayi video</button>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var VOICES = {
+    ur: [["ur-PK-AsadNeural","Asad, male (Pakistan)"],["ur-PK-UzmaNeural","Uzma, female (Pakistan)"],
+         ["ur-IN-SalmanNeural","Salman, male (India)"],["ur-IN-GulNeural","Gul, female (India)"]],
+    hi: [["hi-IN-MadhurNeural","Madhur, male"],["hi-IN-SwaraNeural","Swara, female"]],
+    en: [["en-US-GuyNeural","Guy, male (US)"],["en-US-ChristopherNeural","Christopher, male (US)"],
+         ["en-US-JennyNeural","Jenny, female (US)"],["en-US-AriaNeural","Aria, female (US)"],
+         ["en-GB-RyanNeural","Ryan, male (UK)"],["en-GB-SoniaNeural","Sonia, female (UK)"],
+         ["en-IN-PrabhatNeural","Prabhat, male (India)"],["en-IN-NeerjaNeural","Neerja, female (India)"]]
+  };
+  var $ = function(id){ return document.getElementById(id); };
+  var base = "", file = null, lang = "ur", connected = false, busy = false, pollTimer = null, audioEl = null;
+
+  // header waveform bars
+  var wh = $("wavehead");
+  for (var i = 0; i < 28; i++) {
+    var b = document.createElement("i");
+    b.style.height = (22 + Math.abs(Math.sin(i * 0.7)) * 70) + "%";
+    b.style.animationDelay = (i * 0.06) + "s";
+    wh.appendChild(b);
+  }
+
+  function lsGet(k){ try { return localStorage.getItem(k) || ""; } catch(e){ return ""; } }
+  function lsSet(k,v){ try { localStorage.setItem(k, v); } catch(e){} }
+  function clean(u){ u = (u || "").trim(); if (u && !/^https?:\/\//i.test(u)) u = "https://" + u; return u.replace(/\/+$/, ""); }
+  function show(el, on){ $(el).classList.toggle("hidden", !on); }
+  function updateStart(){ $("startBtn").disabled = !(connected && file && !busy); }
+
+  function fillVoices(){
+    var sel = $("voice"); sel.innerHTML = "";
+    VOICES[lang].forEach(function(v){
+      var o = document.createElement("option"); o.value = v[0]; o.textContent = v[1]; sel.appendChild(o);
+    });
+  }
+  fillVoices();
+
+  $("tiles").addEventListener("click", function(e){
+    var t = e.target.closest(".tile"); if (!t) return;
+    lang = t.getAttribute("data-lang");
+    Array.prototype.forEach.call(document.querySelectorAll(".tile"), function(x){
+      x.setAttribute("aria-checked", x === t ? "true" : "false");
+    });
+    fillVoices();
+  });
+
+  // connect
+  function connect(){
+    var u = clean($("backend").value);
+    if (!u) { setConn(false, "Link paste karein"); return; }
+    $("connText").textContent = "Check ho raha hai...";
+    var ctl = new AbortController(); var to = setTimeout(function(){ ctl.abort(); }, 12000);
+    fetch(u + "/health", {cache:"no-store", signal: ctl.signal}).then(function(r){
+      clearTimeout(to);
+      if (!r.ok) throw new Error("status " + r.status);
+      return r.json();
+    }).then(function(j){
+      base = u; lsSet("za_backend", u);
+      setConn(true, j.busy ? "Connected (abhi aik video ban rahi hai)" : "Connected, backend tayyar hai");
+    }).catch(function(){
+      clearTimeout(to);
+      setConn(false, "Connect nahi hua. Kaggle cell chal rahi hai aur link naya hai?");
+    });
+  }
+  function setConn(ok, text){
+    connected = ok;
+    $("dot").className = "dot " + (ok ? "ok" : "bad");
+    $("connText").textContent = text;
+    updateStart();
+  }
+  $("connectBtn").addEventListener("click", connect);
+  $("backend").addEventListener("keydown", function(e){ if (e.key === "Enter") connect(); });
+  var saved = lsGet("za_backend");
+  if (saved) { $("backend").value = saved; connect(); }
+
+  // preview voice
+  $("previewBtn").addEventListener("click", function(){
+    if (!connected) { setConn(false, "Pehle backend connect karein"); return; }
+    if (audioEl) { audioEl.pause(); }
+    audioEl = new Audio(base + "/sample?voice=" + encodeURIComponent($("voice").value));
+    var btn = $("previewBtn"); btn.disabled = true; btn.textContent = "...";
+    audioEl.addEventListener("canplay", function(){ btn.disabled = false; btn.textContent = "Sunein"; });
+    audioEl.addEventListener("error", function(){ btn.disabled = false; btn.textContent = "Sunein"; });
+    audioEl.play().catch(function(){ btn.disabled = false; btn.textContent = "Sunein"; });
+  });
+
+  // file
+  function setFile(f){
+    if (!f) return;
+    if (f.type && f.type.indexOf("video") !== 0 && !/\.(mp4|mov|mkv|webm|avi|m4v)$/i.test(f.name)) {
+      $("fileinfo").textContent = "Ye video file nahi lagti."; return;
+    }
+    file = f;
+    $("fileinfo").textContent = f.name + "  (" + (f.size / 1048576).toFixed(1) + " MB)";
+    $("dropTitle").textContent = "Video chuni gayi. Badalne ke liye dobara click karein";
+    show("sizewarn", f.size > 100 * 1048576);
+    updateStart();
+  }
+  var drop = $("drop");
+  drop.addEventListener("click", function(){ $("file").click(); });
+  drop.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("file").click(); } });
+  $("file").addEventListener("change", function(e){ setFile(e.target.files[0]); });
+  ["dragenter","dragover"].forEach(function(n){ drop.addEventListener(n, function(e){ e.preventDefault(); drop.classList.add("over"); }); });
+  ["dragleave","drop"].forEach(function(n){ drop.addEventListener(n, function(e){ e.preventDefault(); drop.classList.remove("over"); }); });
+  drop.addEventListener("drop", function(e){ if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]); });
+
+  // start
+  function setBar(p){ $("bar").style.width = Math.max(2, Math.min(100, p)) + "%"; }
+  function showError(short, long){
+    busy = false; wh.classList.remove("live");
+    show("progCard", false); show("doneCard", false); show("errCard", true);
+    $("errShort").textContent = short; $("errText").textContent = long || short;
+    updateStart();
+  }
+
+  $("startBtn").addEventListener("click", function(){
+    if (!file || !connected || busy) return;
+    busy = true; updateStart(); wh.classList.add("live");
+    show("errCard", false); show("doneCard", false); show("progCard", true);
+    setBar(2); $("msg").textContent = "Video upload ho rahi hai: 0%";
+    var fd = new FormData();
+    fd.append("video", file); fd.append("target", lang);
+    fd.append("voice", $("voice").value); fd.append("source", $("source").value);
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", base + "/dub");
+    xhr.upload.onprogress = function(e){
+      if (e.lengthComputable) {
+        var p = Math.round(e.loaded / e.total * 100);
+        $("msg").textContent = "Video upload ho rahi hai: " + p + "%";
+        setBar(p * 0.05);
+      }
+    };
+    xhr.onerror = function(){ showError("Upload nahi ho saki. Backend link aur video ka size check karein.", "Network error during upload to " + base); };
+    xhr.onload = function(){
+      var j = {};
+      try { j = JSON.parse(xhr.responseText); } catch(e){}
+      if (xhr.status !== 200 || !j.job_id) { showError("Backend ne video qabool nahi ki.", "HTTP " + xhr.status + "\n" + (xhr.responseText || "").slice(0, 600)); return; }
+      poll(j.job_id, 0);
+    };
+    xhr.send(fd);
+  });
+
+  function poll(id, fails){
+    fetch(base + "/status/" + id, {cache:"no-store"}).then(function(r){
+      return r.json().then(function(j){ return {ok: r.ok, j: j}; });
+    }).then(function(res){
+      if (!res.ok) { showError("Backend ko ye kaam yaad nahi (shayad restart hua).", JSON.stringify(res.j)); return; }
+      var j = res.j;
+      if (j.status === "error") { showError("Dubbing ke dauran error aaya.", j.error); return; }
+      setBar(j.progress || 0); $("msg").textContent = j.message || "";
+      if (j.status === "done") { finish(id, j); return; }
+      pollTimer = setTimeout(function(){ poll(id, 0); }, 3000);
+    }).catch(function(){
+      if (fails >= 6) { showError("Backend se rabta toot gaya. Kaggle session chal raha hai? Naya link paste kar ke dobara koshish karein.", "Status polling failed 7 times for job " + id); return; }
+      pollTimer = setTimeout(function(){ poll(id, fails + 1); }, 4000);
+    });
+  }
+
+  function finish(id, j){
+    busy = false; wh.classList.remove("live"); updateStart();
+    show("progCard", false); show("doneCard", true);
+    var url = base + "/result/" + id;
+    $("player").src = url;
+    $("dlLink").href = url + "?dl=1";
+    var parts = [];
+    if (j.detected) parts.push("Asal zubaan: " + j.detected);
+    if (j.lines) parts.push(j.lines + " jumle");
+    if (j.too_long) parts.push(j.too_long + " jumle thore tez ya kate hue ho sakte hain");
+    $("doneInfo").textContent = parts.join("  |  ");
+    $("doneCard").scrollIntoView({behavior:"smooth", block:"start"});
+  }
+
+  $("againBtn").addEventListener("click", function(){
+    show("doneCard", false); file = null; $("fileinfo").textContent = "";
+    $("dropTitle").textContent = "Video yahan chhorein ya click karein";
+    $("file").value = ""; show("sizewarn", false); updateStart();
+    window.scrollTo({top:0, behavior:"smooth"});
+  });
+
+  $("copyErr").addEventListener("click", function(){
+    var t = $("errText").textContent, b = $("copyErr");
+    function done(){ b.textContent = "Copy ho gaya"; setTimeout(function(){ b.textContent = "Error copy karein"; }, 1800); }
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(t).then(done, done); }
+    else { var ta = document.createElement("textarea"); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch(e){} document.body.removeChild(ta); done(); }
+  });
+})();
+</script>
+</body>
+</html>
